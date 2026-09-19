@@ -22,3 +22,31 @@ type Job struct {
 	CreatedAt time.Time       `json:"created_at"`
 	UpdatedAt time.Time       `json:"updated_at"`
 }
+
+func (s Status) Valid() bool {
+	switch s {
+	case StatusQueued, StatusFailed, StatusSucceeded, StatusRunning:
+		return true
+	default:
+		return false
+	}
+}
+
+func (s Status) CanTransition(next Status) bool {
+	switch s {
+	case StatusQueued:
+		if next == StatusRunning {
+			return true
+		} else {
+			return false
+		}
+	case StatusRunning:
+		if next == StatusSucceeded || next == StatusFailed {
+			return true
+		} else {
+			return false
+		}
+	default:
+		return false
+	}
+}
