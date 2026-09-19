@@ -20,9 +20,11 @@ func main() {
 }
 
 // construct and return the router
+// this isolates the router when you call it for testing purposes
 func newHandler() http.Handler {
 	mux := http.NewServeMux()
 
+	// performs behavior for matched request and writes response
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
