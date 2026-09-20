@@ -15,7 +15,7 @@ const (
 )
 
 type Job struct {
-	Id        string          `json:"id"`
+	ID        string          `json:"id"`
 	Type      string          `json:"type"`
 	Payload   json.RawMessage `json:"payload"`
 	Status    Status          `json:"status"`
@@ -32,7 +32,7 @@ func (s Status) Valid() bool {
 	}
 }
 
-func (s Status) CanTransition(next Status) bool {
+func (s Status) CanTransitionTo(next Status) bool {
 	switch s {
 	case StatusQueued:
 		if next == StatusRunning {
