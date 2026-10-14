@@ -154,10 +154,9 @@ func TestMemoryStoreCopiesPayloadOnGet(t *testing.T) {
 func TestMemoryConcurrentAccess(t *testing.T) {
 	store := NewMemoryStore()
 
-	const workers = 50
 	var wg sync.WaitGroup
 
-	for i := 0; i < workers; i++ {
+	for i := range 50 {
 		wg.Add(1)
 
 		go func(i int) {
