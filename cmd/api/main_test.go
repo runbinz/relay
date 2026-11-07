@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"relay/internal/job"
 	"relay/internal/store"
@@ -117,6 +118,53 @@ func TestCreateJobEndpointRejectsMalformedJSON(t *testing.T) {
 				t.Errorf("status = %d, want %d; body = %q", rec.Code, http.StatusBadRequest, rec.Body.String())
 			}
 		})
+	}
+}
+
+func TestGetJobEndpoint(t *testing.T) {
+	memoryStore := store.NewMemoryStore()
+	now := time.Date(2026, time.October, 13, 12, 0, 0, 0, time.UTC)
+	want := job.Job{
+		ID:        "job-123",
+		Type:      "send_email",
+		Payload:   json.RawMessage(`{"recipient":"user@example.com"}`),
+		Status:    job.StatusQueued,
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+	if err := memoryStore.Create(want); err != nil {
+		t.Fatalf("arrange stored job: %v", err)
+	}
+
+	handler := newHandler(memoryStore)
+	req := httptest.NewRequest(http.MethodGet, "/jobs/"+want.ID, nil)
+	rec := httptest.NewRecorder()
+
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body = %q", rec.Code, http.StatusOK, rec.Body.String())
+	}
+	if got := rec.Header().Get("Content-Type"); got != "application/json" {
+		t.Errorf("Content-Type = %q, want %q", got, "application/json")
+	}
+
+	var got job.Job
+	if err := json.NewDecoder(rec.Body).Decode(&got); err != nil {
+		t.Fatalf("decode response body: %v", err)
+	}
+	assertJobsEquivalent(t, got, want)
+}
+
+func TestGetJobEndpointNotFound(t *testing.T) {
+	handler := newHandler(store.NewMemoryStore())
+	req := httptest.NewRequest(http.MethodGet, "/jobs/missing-job", nil)
+	rec := httptest.NewRecorder()
+
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusNotFound {
+		t.Errorf("status = %d, want %d; body = %q", rec.Code, http.StatusNotFound, rec.Body.String())
 	}
 }
 
