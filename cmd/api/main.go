@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"relay/internal/job"
@@ -92,6 +93,29 @@ func newHandler(s *store.MemoryStore) http.Handler {
 
 		if err := json.NewEncoder(w).Encode(createdJob); err != nil {
 			log.Printf("encoding created job: %v", err)
+		}
+	})
+
+	mux.HandleFunc("GET /jobs/{id}", func(w http.ResponseWriter, r *http.Request) {
+		id := r.PathValue("id")
+
+		found, err := s.Get(id)
+
+		if err != nil {
+			if errors.Is(err, store.ErrNotFound) {
+				http.Error(w, "job not found", http.StatusNotFound)
+				return
+			}
+			http.Error(w, "could not retrieve job", http.StatusInternalServerError)
+			return
+		}
+
+		// writing to header occurs before encoding
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+
+		if err := json.NewEncoder(w).Encode(found); err != nil {
+			log.Printf("encoding found job: %v", err)
 		}
 	})
 
